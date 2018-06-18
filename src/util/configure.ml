@@ -31,9 +31,6 @@ let oasis_files = [
   "setup.exe";
   "setup.data";
   "setup.log";
-  "src/unix/lwt_config.h";
-  "src/unix/lwt_config.ml";
-  "src/unix/lwt_unix_jobs_generated.ml";
 ]
 
 let oasis_warning_message =
@@ -64,18 +61,6 @@ let main () =
   Arg.parse args ignore usage;
 
   let () = oasis_sanity_check () in
-
-  let f = open_out "src/unix/lwt_config" in
-  let print name var =
-    match var with
-    | None -> ()
-    | Some var -> Printf.fprintf f "%s: %b\n" name var
-  in
-  print "use_libev" !use_libev;
-  print "use_pthread" !use_pthread;
-  print "android_target" !android_target;
-  print "libev_default" !libev_default;
-  close_out f;
 
   (* Compilers starting from 4.03.0 support the -O3 flag. *)
   let () =

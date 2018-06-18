@@ -79,7 +79,6 @@ clean:
 	jbuilder clean
 	find . -name '.merlin' | xargs rm -f
 	rm -fr docs/api
-	rm -f src/jbuild-ignore src/unix/lwt_config src/core/flambda.flag
 	for TEST in `ls -d test/packaging/*/*` ; \
 	do \
 	    make -wC $$TEST clean ; \
