@@ -8,13 +8,13 @@
 (** This module provides helpers for values of type [('a, 'b) result Lwt.t].
     The module is experimental and may change in the future. *)
 
-type (+'a, +'b) t = ('a, 'b) Result.result Lwt.t
+type (+'a, +'b) t = ('a, 'b) Pervasives.result Lwt.t
 
 val return : 'a -> ('a, _) t
 
 val fail : 'b -> (_, 'b) t
 
-val lift : ('a, 'b) Result.result -> ('a, 'b) t
+val lift : ('a, 'b) Pervasives.result -> ('a, 'b) t
 
 val ok : 'a Lwt.t -> ('a, _) t
 
@@ -37,7 +37,7 @@ val bind_lwt : ('a,'e) t -> ('a -> 'b Lwt.t) -> ('b,'e) t
 
 val bind_lwt_err : ('a,'e1) t -> ('e1 -> 'e2 Lwt.t) -> ('a,'e2) t
 
-val bind_result : ('a,'e) t -> ('a -> ('b,'e) Result.result) -> ('b,'e) t
+val bind_result : ('a,'e) t -> ('a -> ('b,'e) Pervasives.result) -> ('b,'e) t
 
 module Infix : sig
   val (>|=) : ('a,'e) t -> ('a -> 'b) -> ('b,'e) t

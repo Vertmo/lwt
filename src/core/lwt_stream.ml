@@ -89,16 +89,15 @@ type 'a t = {
   (* Node marking the end of the queue of pending elements. *)
 }
 
-class type ['a] bounded_push = object
-  method size : int
-  method resize : int -> unit
-  method push : 'a -> unit Lwt.t
-  method close : unit
-  method count : int
-  method blocked : bool
-  method closed : bool
-  method set_reference : 'a. 'a -> unit
-end
+type 'a bounded_push = {
+  mutable closed : bool;
+  info : 'a push_bounded;
+  (*wakener_cell : unit Lwt.u ref;
+  last : 'a node ref;
+    close : unit Lwt.u;*)
+}
+
+let size b = b.info.pushb_size
 
 (* The only difference between two clones is the pointer to the first
    pending element. *)
@@ -128,7 +127,7 @@ let from f =
 let from_direct f =
   from_source (From_direct f)
 
-let closed s =
+let closed : 'a t -> unit Lwt.t = fun s ->
   (Lwt.waiter_of_wakener [@ocaml.warning "-3"]) s.close
 
 let is_closed s =
@@ -223,7 +222,7 @@ let notify_pusher info last =
   info.pushb_push_wakener <- wakener;
   Lwt.wakeup_later old_wakener ()
 
-class ['a] bounded_push_impl (info : 'a push_bounded) wakener_cell last close = object
+(*class ['a] bounded_push_impl (info : 'a push_bounded) wakener_cell last close = object
   val mutable closed = false
 
   method size =
@@ -308,12 +307,12 @@ class ['a] bounded_push_impl (info : 'a push_bounded) wakener_cell last close = 
 
   method set_reference : 'a. 'a -> unit =
     fun x -> info.pushb_external <- Obj.repr x
-end
+  end*)
 
 let create_bounded size =
   if size < 0 then invalid_arg "Lwt_stream.create_bounded";
   (* Create the source for notifications of new elements. *)
-  let info, wakener_cell =
+  let info, _ (*wakener_cell*) =
     let waiter, wakener = Lwt.wait () in
     let push_waiter, push_wakener = Lwt.task () in
     ({ pushb_signal = waiter;
@@ -327,7 +326,7 @@ let create_bounded size =
      ref wakener)
   in
   let t = from_source (Push_bounded info) in
-  (t, new bounded_push_impl info wakener_cell t.last t.close)
+  (t, ({closed=false; info=info(*; wakener_cell=wakener_cell; last=t.last; close=t.close*)}))
 
 (* Wait for a new element to be added to the queue of pending element
    of the stream. *)
@@ -445,12 +444,12 @@ let rec get_exn_rec' s node =
     Lwt.try_bind
       (fun () -> feed s)
       (fun () -> get_exn_rec' s node)
-      (fun exn -> Lwt.return (Some (Result.Error exn)))
+      (fun exn -> Lwt.return (Some (Pervasives.Error exn)))
   else
     match node.data with
     | Some value ->
       consume s node;
-      Lwt.return (Some (Result.Ok value))
+      Lwt.return (Some (Pervasives.Ok value))
     | None ->
       Lwt.return_none
 
@@ -896,13 +895,13 @@ let iter_p f s = iter_p_rec s.node f s
 
 let iter_n ?(max_concurrency = 1) f stream =
   begin
-    if max_concurrency <= 0 then
-      let message =
+    if max_concurrency <= 0 then ()
+      (*let message =
         Printf.sprintf
           "Lwt_stream.iter_n: max_concurrency must be > 0, %d given"
           max_concurrency
       in
-      invalid_arg message
+        invalid_arg message*)
   end;
   let rec loop running available =
     begin
@@ -1078,14 +1077,14 @@ let hexdump stream =
       Lwt.return_none
     | l ->
       Buffer.clear buf;
-      Printf.bprintf buf "%08x|  " !num;
+      (*Printf.bprintf buf "%08x|  " !num;*)
       num := !num + 16;
       let rec bytes pos = function
         | [] ->
           blanks pos
-        | x :: l ->
+        | _ :: l ->
           if pos = 8 then Buffer.add_char buf ' ';
-          Printf.bprintf buf "%02x " (Char.code x);
+          (*Printf.bprintf buf "%02x " (Char.code x);*)
           bytes (pos + 1) l
       and blanks pos =
         if pos < 16 then begin
@@ -1101,4 +1100,4 @@ let hexdump stream =
       List.iter (fun ch -> Buffer.add_char buf (if ch >= '\x20' && ch <= '\x7e' then ch else '.')) l;
       Buffer.add_char buf '|';
       Lwt.return (Some(Buffer.contents buf))
-  end
+    end

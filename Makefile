@@ -1,3 +1,5 @@
+include ../OMicroB/etc/Makefile.conf
+
 # Default rule
 .PHONY: default
 default: build
@@ -5,7 +7,7 @@ default: build
 # build the usual development packages
 .PHONY: build
 build: check-config
-	jbuilder build --dev
+	CAMLLIB=$(LIB) jbuilder build
 
 # run unit tests for package lwt
 .PHONY: test

@@ -1342,9 +1342,9 @@ val return_false : bool t
 
 
 
-(** {3 Result type} *)
+(** {3 Pervasives type} *)
 
-type +'a result = ('a, exn) Result.result
+type +'a result = ('a, exn) Pervasives.result
 (** Representation of the content of a resolved promise of type
     ['a ]{!Lwt.t}.
 
@@ -1360,8 +1360,8 @@ type +'a Lwt.result =
 
 {[
 type +'a Lwt.result =
-  | Result.Ok of 'a
-  | Result.Error of exn
+  | Pervasives.Ok of 'a
+  | Pervasives.Error of exn
 ]}
 
     A resolved promise of type ['a ]{!Lwt.t} is either fulfilled with a value of
@@ -1383,10 +1383,10 @@ type +'a Lwt.result =
     unfortunate historical accident. [Pervasives.result] did not exist when
     [Lwt.result] was created.
 
-    The type [Result.result] is equivalent to [Pervasives.result] starting from
+    The type [Pervasives.result] is equivalent to [Pervasives.result] starting from
     OCaml 4.03. If you need compatibility with OCaml 4.02, refer to
-    [Pervasives.result] as [Result.result], and prefix the constructor names
-    with [Result], as shown in the second example. *)
+    [Pervasives.result] as [Pervasives.result], and prefix the constructor names
+    with [Pervasives], as shown in the second example. *)
 
 val of_result : 'a result -> 'a t
 (** [Lwt.of_result r] converts an r to a resolved promise.
@@ -1571,20 +1571,20 @@ val wakeup_result : 'a u -> 'a result -> unit
 
 val make_value : 'a -> 'a result
   [@@ocaml.deprecated
-    " Use Result.Ok, which is the same as Ok since OCaml 4.03."]
+    " Use Pervasives.Ok, which is the same as Ok since OCaml 4.03."]
 (** [Lwt.make_value v] is equivalent to
     {{: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html#TYPEresult}
     [Ok v]} since OCaml 4.03. If you need compatibility with OCaml 4.02, use
-    [Result.Ok] and depend on opam package
+    [Pervasives.Ok] and depend on opam package
     {{: https://opam.ocaml.org/packages/result/} [result]}. *)
 
 val make_error : exn -> _ result
   [@@ocaml.deprecated
-    " Use Result.Error, which is the same as Error since OCaml 4.03."]
+    " Use Pervasives.Error, which is the same as Error since OCaml 4.03."]
 (** [Lwt.make_error exn] is equivalent to
     {{: https://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html#TYPEresult}
     [Error exn]} since OCaml 4.03. If you need compatibility with OCaml 4.02,
-    use [Result.Error] and depend on opam package
+    use [Pervasives.Error] and depend on opam package
     {{: https://opam.ocaml.org/packages/result/} [result]}. *)
 
 val waiter_of_wakener : 'a u -> 'a t
@@ -1769,12 +1769,12 @@ val return_some : 'a -> ('a option) t
     takes an argument, so it cannot be evaluated at initialization time, at
     which time the argument is not yet available. *)
 
-val return_ok : 'a -> (('a, _) Result.result) t
+val return_ok : 'a -> (('a, _) Pervasives.result) t
 (** Like {!Lwt.return_some}, this function performs no optimization.
 
     @since Lwt 2.6.0 *)
 
-val return_error : 'e -> ((_, 'e) Result.result) t
+val return_error : 'e -> ((_, 'e) Pervasives.result) t
 (** Like {!Lwt.return_some}, this function performs no optimization.
 
     @since Lwt 2.6.0 *)

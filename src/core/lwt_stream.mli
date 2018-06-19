@@ -75,37 +75,38 @@ exception Full
     push an element. *)
 
 (** Type of sources for bounded push-streams. *)
-class type ['a] bounded_push = object
-  method size : int
-  (** Size of the stream. *)
+type 'a bounded_push (*= {
 
-  method resize : int -> unit
+  resize : int -> unit;
   (** Change the size of the stream queue. Note that the new size
       can smaller than the current stream queue size.
 
       It raises [Invalid_argument] if [size < 0]. *)
 
-  method push : 'a -> unit Lwt.t
+  push : 'a -> unit Lwt.t;
   (** Pushes a new element to the stream. If the stream is full then
       it will block until one element is consumed. If another thread
       is already blocked on {!push}, it raises {!Full}. *)
 
-  method close : unit
+  close : unit;
   (** Closes the stream. Any thread currently blocked on {!push}
       fails with {!Closed}. *)
 
-  method count : int
+  count : unit -> int;
   (** Number of elements in the stream queue. *)
 
-  method blocked : bool
+  blocked : unit -> bool;
   (** Is a thread is blocked on {!push} ? *)
 
-  method closed : bool
+  mutable closed : bool;
   (** Is the stream closed ? *)
 
-  method set_reference : 'a. 'a -> unit
+  set_reference : 'a. 'a -> unit;
   (** Set the reference to an external source. *)
-end
+                         }*)
+
+val size : 'a bounded_push -> int
+(** Size of the stream. *)
 
 val create_bounded : int -> 'a t * 'a bounded_push
 (** [create_bounded size] returns a new stream and a bounded push
@@ -343,13 +344,13 @@ val flatten : 'a list t -> 'a t
 
 val wrap_exn : 'a t -> 'a Lwt.result t
 (** [wrap_exn s] is a stream [s'] such that each time [s] yields a value [v],
-    [s'] yields [Result.Ok v], and when the source of [s] raises an exception
-    [e], [s'] yields [Result.Error e].
+    [s'] yields [Pervasives.Ok v], and when the source of [s] raises an exception
+    [e], [s'] yields [Pervasives.Error e].
 
     Note that push-streams (as returned by {!create}) never raise exceptions.
 
     If the stream source keeps raising the same exception [e] each time the
-    stream is read, [s'] is unbounded. Reading it will produce [Result.Error e]
+    stream is read, [s'] is unbounded. Reading it will produce [Pervasives.Error e]
     indefinitely.
 
     @since 2.7.0 *)

@@ -585,14 +585,14 @@ struct
 
   (* Internal name of the public [+'a Lwt.result]. The public name is defined
      later in the module. This is to avoid potential confusion with
-     [Pervasives.result]/[Result.result], as the public name would not be
+     [Pervasives.result]/[Pervasives.result], as the public name would not be
      prefixed with [Lwt.] inside this file. *)
-  type +'a lwt_result = ('a, exn) Result.result
+  type +'a lwt_result = ('a, exn) Pervasives.result
 
   (* This could probably save an allocation by using [Obj.magic]. *)
   let state_of_result = function
-    | Result.Ok x -> Fulfilled x
-    | Result.Error exn -> Rejected exn
+    | Pervasives.Ok x -> Fulfilled x
+    | Pervasives.Error exn -> Rejected exn
 end
 include Public_types
 
@@ -1141,13 +1141,13 @@ struct
 
 
   let async_exception_hook =
-    ref (fun exn ->
-      prerr_string "Fatal error: exception ";
+    ref (fun _ (*exn*) ->
+      (*prerr_string "Fatal error: exception ";
       prerr_string (Printexc.to_string exn);
       prerr_char '\n';
       Printexc.print_backtrace stderr;
       flush stderr;
-      exit 2)
+        exit 2*) ())
 
   let handle_with_async_exception_hook f v =
     (* Note that this function does not care if [f] evaluates to a promise. In
@@ -1368,17 +1368,17 @@ struct
   (* Note that this function deviates from the "ideal" callback deferral
      behavior: it runs callbacks directly on the current stack. It should
      therefore be possible to cause a stack overflow using this function. *)
-  let wakeup_general api_function_name r result =
+  let wakeup_general _ (*api_function_name*) r result =
     let Internal p = to_internal_resolver r in
     let p = underlying p in
 
     match p.state with
     | Rejected Canceled ->
       ()
-    | Fulfilled _ ->
-      Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name
-    | Rejected _ ->
-      Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name
+    | Fulfilled _ -> ()
+    (*Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name*)
+    | Rejected _ -> ()
+    (*Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name*)
 
     | Pending _ ->
       let result = state_of_result result in
@@ -1386,20 +1386,20 @@ struct
       ignore p
 
   let wakeup_result r result = wakeup_general "wakeup_result" r result
-  let wakeup r v = wakeup_general "wakeup" r (Result.Ok v)
-  let wakeup_exn r exn = wakeup_general "wakeup_exn" r (Result.Error exn)
+  let wakeup r v = wakeup_general "wakeup" r (Pervasives.Ok v)
+  let wakeup_exn r exn = wakeup_general "wakeup_exn" r (Pervasives.Error exn)
 
-  let wakeup_later_general api_function_name r result =
+  let wakeup_later_general _ (*api_function_name*) r result =
     let Internal p = to_internal_resolver r in
     let p = underlying p in
 
     match p.state with
     | Rejected Canceled ->
       ()
-    | Fulfilled _ ->
-      Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name
-    | Rejected _ ->
-      Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name
+    | Fulfilled _ -> ()
+    (*Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name*)
+    | Rejected _ -> ()
+    (*Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name*)
 
     | Pending _ ->
       let result = state_of_result result in
@@ -1410,9 +1410,9 @@ struct
   let wakeup_later_result r result =
     wakeup_later_general "wakeup_later_result" r result
   let wakeup_later r v =
-    wakeup_later_general "wakeup_later" r (Result.Ok v)
+    wakeup_later_general "wakeup_later" r (Pervasives.Ok v)
   let wakeup_later_exn r exn =
-    wakeup_later_general "wakeup_later_exn" r (Result.Error exn)
+    wakeup_later_general "wakeup_later_exn" r (Pervasives.Error exn)
 
 
 
@@ -1491,8 +1491,8 @@ sig
   val return_false : bool t
   val return_none : _ option t
   val return_some : 'a -> 'a option t
-  val return_ok : 'a -> ('a, _) Result.result t
-  val return_error : 'e -> (_, 'e) Result.result t
+  val return_ok : 'a -> ('a, _) Pervasives.result t
+  val return_error : 'e -> (_, 'e) Pervasives.result t
   val return_nil : _ list t
 
   val fail_with : string -> _ t
@@ -1514,8 +1514,8 @@ struct
   let return_nil = return []
   let return_true = return true
   let return_false = return false
-  let return_ok x = return (Result.Ok x)
-  let return_error x = return (Result.Error x)
+  let return_ok x = return (Pervasives.Ok x)
+  let return_error x = return (Pervasives.Error x)
 
   let fail_with msg =
     to_public_promise {state = Rejected (Failure msg)}
@@ -2630,7 +2630,7 @@ struct
   (* The PRNG state is initialized with a constant to make non-IO-based programs
      deterministic. *)
   (* Maintainer's note: is this necessary? *)
-  let prng = lazy (Random.State.make [||])
+  (*let prng = lazy (Random.State.make [||])*)
 
   let choose ps =
     match count_resolved_promises_in ps with
@@ -2651,8 +2651,8 @@ struct
     | 1 ->
       nth_resolved ps 0
 
-    | n ->
-      nth_resolved ps (Random.State.int (Lazy.force prng) n)
+    | _ (*n*) ->
+      nth_resolved ps 0 (*(Random.State.int (Lazy.force prng) n)*)
 
   let pick ps =
     match count_resolved_promises_in ps with
@@ -2674,9 +2674,9 @@ struct
     | 1 ->
       nth_resolved_and_cancel_pending ps 0
 
-    | n ->
-      nth_resolved_and_cancel_pending ps
-        (Random.State.int (Lazy.force prng) n)
+    | _ (*n*) ->
+      nth_resolved_and_cancel_pending ps 0
+  (*(Random.State.int (Lazy.force prng) n)*)
 
 
 
@@ -3071,7 +3071,7 @@ struct
   type +'a result = 'a lwt_result
 
   (* Deprecated. *)
-  let make_value v = Result.Ok v
-  let make_error exn = Result.Error exn
+  let make_value v = Pervasives.Ok v
+  let make_error exn = Pervasives.Error exn
 end
 include Lwt_result_type
