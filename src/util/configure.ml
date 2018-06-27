@@ -69,7 +69,7 @@ let main () =
         (fun major minor -> major, minor)
     in
     let supports_o3 = (major, minor) >= (4, 3) in
-    let flags_file = open_out "src/core/flambda.flag" in
+    let flags_file = open_out "src/flambda.flag" in
     begin
       if supports_o3 then
         output_string flags_file "-O3\n"
