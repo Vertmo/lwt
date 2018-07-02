@@ -1,0 +1,9 @@
+(jbuild_version 1)
+
+(library
+ ((name lwt_unix)
+  (public_name lwt.unix)
+  (synopsis "Unix support for Lwt")
+  (wrapped false)
+  (libraries (lwt))
+  (flags (:standard -w +A-29))))
