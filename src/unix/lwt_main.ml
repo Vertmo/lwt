@@ -26,7 +26,7 @@ let rec run t =
     (* Call enter hooks. *)
     Lwt_sequence.iter_l (fun f -> f ()) enter_iter_hooks;
     (* Do the main loop call. *)
-    (* Lwt_engine.iter (Lwt.paused_count () = 0 && Lwt_sequence.is_empty yielded); TODO *)
+    (* Lwt_engine.iter (Lwt.paused_count () = 0 && Lwt_sequence.is_empty yielded); *)
     (* Wakeup paused threads again. *)
     Lwt.wakeup_paused ();
     (* Wakeup yielded threads now. *)
@@ -38,3 +38,5 @@ let rec run t =
     (* Call leave hooks. *)
     Lwt_sequence.iter_l (fun f -> f ()) leave_iter_hooks;
 run t
+
+let yield () = (Lwt.add_task_r [@ocaml.warning "-3"]) yielded
