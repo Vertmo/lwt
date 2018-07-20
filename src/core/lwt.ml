@@ -1176,56 +1176,41 @@ struct
       (result : 'a resolved_state) : unit =
 
     let run_cancel_callbacks fs =
-      let rec iter_callback_list fs rest =
+      let rec iter_callback_list fs =
         match fs with
-        | Cancel_callback_list_empty ->
-          iter_list rest
-        | Cancel_callback_list_callback (storage, f) ->
+        | (Cancel_callback_list_empty)::rest ->
+          iter_callback_list rest
+        | (Cancel_callback_list_callback (storage, f))::rest ->
           current_storage := storage;
           handle_with_async_exception_hook f ();
-          iter_list rest
-        | Cancel_callback_list_remove_sequence_node node ->
+          iter_callback_list rest
+        | (Cancel_callback_list_remove_sequence_node node)::rest ->
           Lwt_sequence.remove node;
-          iter_list rest
-        | Cancel_callback_list_concat (fs, fs') ->
-          iter_callback_list fs (fs'::rest)
+          iter_callback_list rest
+        | (Cancel_callback_list_concat (fs, fs'))::rest ->
+          iter_callback_list (fs::(fs'::rest))
 
-      and iter_list rest =
-        match rest with
-        | [] -> ()
-        | fs::rest -> iter_callback_list fs rest
-
-      in
-
-      iter_callback_list fs []
+      in iter_callback_list [fs]
     in
 
     let run_regular_callbacks fs =
-      let rec iter_callback_list fs rest =
+      let rec iter_callback_list fs =
         match fs with
-        | Regular_callback_list_empty ->
-          iter_list rest
-        | Regular_callback_list_implicitly_removed_callback f ->
-          f result;
-          iter_list rest
-        | Regular_callback_list_explicitly_removable_callback
-            {contents = None} ->
-          iter_list rest
-        | Regular_callback_list_explicitly_removable_callback
-            {contents = Some f} ->
-          f result;
-          iter_list rest
-        | Regular_callback_list_concat (fs, fs') ->
-          iter_callback_list fs (fs'::rest)
-
-      and iter_list rest =
-        match rest with
         | [] -> ()
-        | fs::rest -> iter_callback_list fs rest
+        | (Regular_callback_list_empty)::rest ->
+          iter_callback_list rest
+        | (Regular_callback_list_implicitly_removed_callback f)::rest ->
+          f result;
+          iter_callback_list rest
+        | (Regular_callback_list_explicitly_removable_callback {contents = None})::rest ->
+          iter_callback_list rest
+        | (Regular_callback_list_explicitly_removable_callback {contents = Some f})::rest ->
+          f result;
+          iter_callback_list rest
+        | (Regular_callback_list_concat (fs, fs'))::rest ->
+          iter_callback_list (fs::(fs'::rest))
 
-      in
-
-      iter_callback_list fs []
+      in iter_callback_list [fs]
     in
 
     (* Pattern matching is much faster than polymorphic comparison. *)
@@ -1373,13 +1358,9 @@ struct
     let p = underlying p in
 
     match p.state with
-    | Rejected Canceled ->
-      ()
+    | Rejected Canceled -> ()
     | Fulfilled _ -> ()
-    (*Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name*)
     | Rejected _ -> ()
-    (*Printf.ksprintf Pervasives.invalid_arg "Lwt.%s" api_function_name*)
-
     | Pending _ ->
       let result = state_of_result result in
       let State_may_have_changed p = resolve ~allow_deferring:false p result in
